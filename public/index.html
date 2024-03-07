@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRChat World Info</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #result {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            margin-top: 20px;
+        }
+
+        .world-info {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+            .world-info img {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 10px;
+            }
+
+            .world-info iframe {
+                width: 100%;
+                height: 100px;
+            }
+
+        .description {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .author {
+            color: blue; /* Change the color as needed */
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Additional styles for different view modes */
+        .list-view .world-info {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+            /* Hide iframe in list view */
+            .list-view .world-info iframe {
+                display: none;
+            }
+
+        .list-view-button {
+            margin-bottom: 10px;
+        }
+
+        .emoji-button {
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>VRChat World Info</h1>
+    <label for="worldInput">Enter World IDs or URLs (separated by enter):</label>
+    <textarea id="worldInput" rows="5"></textarea>
+    <button onclick="fetchWorldInfo()">Fetch World Info</button>
+
+    <!-- View mode buttons -->
+    <div>
+        <button onclick="changeViewMode('grid-view')">Grid View</button>
+        <button onclick="changeViewMode('list-view')" class="list-view-button">List View</button>
+        <button onclick="showDescriptions()">Show Descriptions</button>
+        <button onclick="hideDescriptions()">Hide Descriptions</button>
+        <button onclick="saveAsTXT()">Save as TXT</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function fetchWorldInfo() {
+            const worldInput = document.getElementById('worldInput');
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = ''; // Clear previous results
+
+            const worldIds = parseWorldIds(worldInput.value);
+
+            for (const worldId of worldIds) {
+                try {
+                    const response = await fetch(`/api/world/${worldId}`);
+                    const data = await response.json();
+
+                    // Display world info
+                    const worldInfoDiv = document.createElement('div');
+                    worldInfoDiv.classList.add('world-info');
+
+                    worldInfoDiv.innerHTML += `<h2 class="title">${data.name}</h2>`;
+                    worldInfoDiv.innerHTML += `<p class="author">${data.authorName}</p>`;
+                    worldInfoDiv.innerHTML += `<img src="${data.imageUrl}" alt="World Image">`;
+
+                    if (data.previewYoutubeId) {
+                        worldInfoDiv.innerHTML += `<iframe src="https://www.youtube.com/embed/${data.previewYoutubeId}" frameborder="0" allowfullscreen></iframe>`;
+                    }
+
+                    // Add description and show/hide button
+                    worldInfoDiv.innerHTML += `<button onclick="toggleDescription(this)">Show Description</button>`;
+                    worldInfoDiv.innerHTML += `<div class="description">${data.description}</div>`;
+
+                    // Launch button with launch emoji
+                    worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="launchWorld('${worldId}')">🚀</button>`;
+
+                    // Copy title button with copy emoji
+                    worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="copyTitle('${data.name}')">📋</button>`;
+
+                    resultDiv.appendChild(worldInfoDiv);
+                } catch (error) {
+                    console.error(`Error fetching data for World ID ${worldId}:`, error.message);
+                }
+            }
+        }
+
+        function changeViewMode(mode) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('grid-view', 'list-view');
+            resultDiv.classList.add(mode);
+        }
+
+        function parseWorldIds(input) {
+            // Split input by line breaks and filter out empty lines
+            const lines = input.split('\n').filter(Boolean);
+            const worldIds = [];
+
+            // Regular expression to extract world IDs from URLs
+            const urlRegex = /(?:worlds\/|worldId=|wrld_)([a-f0-9-]+)/i;
+
+            for (const line of lines) {
+                // Try to extract world ID from the URL using the regex
+                const match = line.match(urlRegex);
+                if (match && match[1]) {
+                    // Ensure the world ID has the "wrld_" prefix
+                    const worldId = match[1].startsWith('wrld_') ? match[1] : `wrld_${match[1]}`;
+                    worldIds.push(worldId);
+                } else {
+                    // Assume the line is a world ID if the regex doesn't match
+                    worldIds.push(line.trim());
+                }
+            }
+
+            return worldIds;
+        }
+
+        function toggleDescription(button) {
+            const description = button.nextElementSibling; // Get the next sibling (description div)
+            const buttonText = button.innerText;
+
+            if (buttonText === 'Show Description') {
+                button.innerText = 'Hide Description';
+                description.style.display = 'block';
+            } else {
+                button.innerText = 'Show Description';
+                description.style.display = 'none';
+            }
+        }
+
+        function showDescriptions() {
+            const descriptions = document.querySelectorAll('.description');
+
+            for (const description of descriptions) {
+                description.style.display = 'block';
+            }
+        }
+
+        function hideDescriptions() {
+            const descriptions = document.querySelectorAll('.description');
+
+            for (const description of descriptions) {
+                description.style.display = 'none';
+            }
+        }
+
+        function launchWorld(worldId) {
+            window.open(`https://vrchat.com/home/launch?worldId=${worldId}`, '_blank');
+        }
+
+        function copyTitle(title) {
+            // Create a temporary textarea element
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = title;
+            document.body.appendChild(tempTextArea);
+
+            // Select and copy the text
+            tempTextArea.select();
+            document.execCommand('copy');
+
+            // Remove the textarea
+            document.body.removeChild(tempTextArea);
+
+            // Optionally, provide user feedback (e.g., alert)
+            alert(`Title "${title}" copied to clipboard!`);
+        }
+
+        function saveAsTXT() {
+            const resultDiv = document.getElementById('result');
+            const worldInfos = resultDiv.querySelectorAll('.world-info');
+            let txtContent = '';
+
+            worldInfos.forEach((worldInfo, index) => {
+                const title = worldInfo.querySelector('.title').innerText;
+                const author = worldInfo.querySelector('.author').innerText;
+                const worldId = parseWorldIds(worldInfo.querySelector('.emoji-button').getAttribute('onclick'))[0];
+                const imageUrl = worldInfo.querySelector('img').getAttribute('src');
+
+                // Append the information to the text content
+                txtContent += `World ${index + 1}:\n`;
+                txtContent += `Title: ${title}\n`;
+                txtContent += `Author: ${author}\n`;
+                txtContent += `World ID: ${worldId}\n`;
+                txtContent += `Image URL: ${imageUrl}\n\n`;
+            });
+
+            // Create a Blob and create a download link
+            const blob = new Blob([txtContent], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'vrchat_world_info.txt';
+            link.click();
+        }
+    </script>
+</body>
+</html>
