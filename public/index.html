@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -100,35 +100,58 @@
             resultDiv.innerHTML = ''; // Clear previous results
 
             const worldIds = parseWorldIds(worldInput.value);
-
             for (const worldId of worldIds) {
                 try {
+                    //console.log(hasWrldPrefix(worldId));
+                    
                     const response = await fetch(`/api/world/${worldId}`);
                     const data = await response.json();
 
-                    // Display world info
-                    const worldInfoDiv = document.createElement('div');
-                    worldInfoDiv.classList.add('world-info');
+                    // Check if the fetched data is undefined
+                    if (!data) {
+                        // If undefined, create a minimal worldInfo object with the world ID as the red-colored title
+                        const worldInfoDiv = document.createElement('div');
+                        worldInfoDiv.classList.add('world-info');
+                        worldInfoDiv.innerHTML = `<h2 class="title" style="color: red;">${worldId}</h2>`;
+                        resultDiv.appendChild(worldInfoDiv);
+                    } else {
+                        // Display world info
+                        const worldInfoDiv = document.createElement('div');
+                        worldInfoDiv.classList.add('world-info');
 
-                    worldInfoDiv.innerHTML += `<h2 class="title">${data.name}</h2>`;
-                    worldInfoDiv.innerHTML += `<p class="author">${data.authorName}</p>`;
-                    worldInfoDiv.innerHTML += `<img src="${data.imageUrl}" alt="World Image">`;
+                        // If data.name is undefined, use worldId as the title with red color
+                        const title = data.name || worldId;
+                        worldInfoDiv.innerHTML += `<h2 class="title" style="${data.name ? '' : 'color: red;'}">${title}</h2>`;
 
-                    if (data.previewYoutubeId) {
-                        worldInfoDiv.innerHTML += `<iframe src="https://www.youtube.com/embed/${data.previewYoutubeId}" frameborder="0" allowfullscreen></iframe>`;
+                        // Append only if the property is defined
+                        if (data.authorName) {
+                            worldInfoDiv.innerHTML += `<p class="author">${data.authorName}</p>`;
+                        }
+
+                        if (data.imageUrl) {
+                            worldInfoDiv.innerHTML += `<img src="${data.imageUrl}" alt="World Image">`;
+                        }
+
+                        if (data.previewYoutubeId) {
+                            worldInfoDiv.innerHTML += `<iframe src="https://www.youtube.com/embed/${data.previewYoutubeId}" frameborder="0" allowfullscreen></iframe>`;
+                        }
+
+                        // Add description and show/hide button
+                        if (data && data.description) {
+                            worldInfoDiv.innerHTML += `<div class="description" style="display: none;">${data.description}</div>`;
+                            worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="toggleDescription(this)">📖</button>`;
+
+                            // Launch button with launch emoji
+                            if (data.name) {
+                                worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="launchWorld('${worldId}')">🚀</button>`;
+                            }
+
+                            // Copy title button with copy emoji
+                            worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="copyTitle('${title}')">📋</button>`;
+                        }
+
+                        resultDiv.appendChild(worldInfoDiv);
                     }
-
-                    // Add description and show/hide button
-                    worldInfoDiv.innerHTML += `<button onclick="toggleDescription(this)">Show Description</button>`;
-                    worldInfoDiv.innerHTML += `<div class="description">${data.description}</div>`;
-
-                    // Launch button with launch emoji
-                    worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="launchWorld('${worldId}')">🚀</button>`;
-
-                    // Copy title button with copy emoji
-                    worldInfoDiv.innerHTML += `<button class="emoji-button" onclick="copyTitle('${data.name}')">📋</button>`;
-
-                    resultDiv.appendChild(worldInfoDiv);
                 } catch (error) {
                     console.error(`Error fetching data for World ID ${worldId}:`, error.message);
                 }
@@ -165,18 +188,21 @@
             return worldIds;
         }
 
-        function toggleDescription(button) {
-            const description = button.nextElementSibling; // Get the next sibling (description div)
-            const buttonText = button.innerText;
-
-            if (buttonText === 'Show Description') {
-                button.innerText = 'Hide Description';
-                description.style.display = 'block';
-            } else {
-                button.innerText = 'Show Description';
-                description.style.display = 'none';
-            }
+        function hasWrldPrefix(worldId) {
+            return worldId.startsWith('wrld_');
         }
+
+        function toggleDescription(button) {
+            const worldInfoDiv = button.closest('.world-info'); // Get the parent world-info div
+            const description = worldInfoDiv.querySelector('.description'); // Get the description div
+
+            // Toggle the display property
+            description.style.display = description.style.display === 'block' ? 'none' : 'block';
+
+            // Update the button text based on the display property
+            button.innerText = description.style.display === 'block' ? '🚫' : '📖';
+        }
+
 
         function showDescriptions() {
             const descriptions = document.querySelectorAll('.description');
