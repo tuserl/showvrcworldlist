@@ -22,20 +22,21 @@
 
         .world-info {
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 3px; /* Further reduced padding */
             text-align: center;
         }
 
-            .world-info img {
-                max-width: 100%;
-                height: auto;
-                margin-bottom: 10px;
-            }
 
-            .world-info iframe {
-                width: 100%;
-                height: 100px;
-            }
+        .world-info img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .world-info iframe {
+            width: 100%;
+            height: 100px;
+        }
 
         .description {
             display: none;
@@ -43,29 +44,33 @@
         }
 
         .author {
-            color: blue; /* Change the color as needed */
+            color: blue;
             font-weight: bold;
         }
 
         .title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             margin-bottom: 10px;
         }
 
-        /* Additional styles for different view modes */
+
         .list-view .world-info {
             width: 100%;
-            margin-bottom: 20px;
+            height: 100%;
+            margin-bottom: 0px;
+            font-size: smaller;
+            display: block;
         }
 
-            /* Hide iframe in list view */
-            .list-view .world-info iframe {
-                display: none;
-            }
+        .list-view .world-info iframe {
+            font-size: smaller;
+            display: none;
+        }
 
         .list-view-button {
-            margin-bottom: 10px;
+            font-size: smaller;
+            margin-bottom: 0px;
         }
 
         .emoji-button {
@@ -102,8 +107,6 @@
             const worldIds = parseWorldIds(worldInput.value);
             for (const worldId of worldIds) {
                 try {
-                    //console.log(hasWrldPrefix(worldId));
-                    
                     const response = await fetch(`/api/world/${worldId}`);
                     const data = await response.json();
 
@@ -188,10 +191,6 @@
             return worldIds;
         }
 
-        function hasWrldPrefix(worldId) {
-            return worldId.startsWith('wrld_');
-        }
-
         function toggleDescription(button) {
             const worldInfoDiv = button.closest('.world-info'); // Get the parent world-info div
             const description = worldInfoDiv.querySelector('.description'); // Get the description div
@@ -202,7 +201,6 @@
             // Update the button text based on the display property
             button.innerText = description.style.display === 'block' ? '🚫' : '📖';
         }
-
 
         function showDescriptions() {
             const descriptions = document.querySelectorAll('.description');
